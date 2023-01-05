@@ -69,7 +69,7 @@ def train_test_split(trace):
     total_data = len(completion_time_ls)
     train_len = int(split_portion*total_data)
     last_train_completion_time = completion_time_ls[train_len]
-    print(f"train test split time is - {last_train_completion_time} \n")
+    print(f"train test split time is - {last_train_completion_time}")
 
     # take all traces where start dates are after the last_train_completion_time
     dtype_list = list(trace.dtypes) # get original types of the columns
@@ -352,10 +352,10 @@ def LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,n
 
 
 ########==============================================   main ==============================================########
-def main(prefix_length=10, dir_path = '../data/training_data/'):
+def main(prefix_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', dir_save_path = 'data/training_data/'):
 
     # read data in csv 
-    trace_df = pd.read_csv('../data/BPIC2020_CSV/filterd_TravelPermits.csv')
+    trace_df = pd.read_csv(dir_load_path)
 
     # basic preprocessing over travel permits dataframe
     trace_processed = data_preprocessing(trace_df)
@@ -368,7 +368,7 @@ def main(prefix_length=10, dir_path = '../data/training_data/'):
     # ==============================================
     # trace length and saving path
     t_length = prefix_length
-    save_path_base = dir_path
+    save_path_base = dir_save_path
     
     # passed features we want to extract
     # str_ev_attr	String attributes at the event level: these are hot-encoded into features that may assume value 0 or value 1.
@@ -389,6 +389,7 @@ def main(prefix_length=10, dir_path = '../data/training_data/'):
     ohe_dict = get_ohe_dict(categorical_vars, trace_base_df)
     # encode training data and save to base dir 
     df_type = 'train'
+    print(f"preparing training data for trace length {t_length}")
     boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
@@ -399,14 +400,13 @@ def main(prefix_length=10, dir_path = '../data/training_data/'):
     df, declerations = extract_prefixtraces_and_decleration(test_df,t_length)
     # encode test data and save to base dir 
     df_type = 'test'
+    print(f"preparing testing data for trace length {t_length}")
     boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
     LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
-
-
-
-
+    
+    print("Done!")
 
 
 if __name__=='__main__':
