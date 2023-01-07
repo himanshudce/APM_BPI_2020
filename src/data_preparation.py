@@ -352,7 +352,7 @@ def LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,n
 
 
 ########==============================================   main ==============================================########
-def main(prefix_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', dir_save_path = 'data/training_data/'):
+def main(prefix_length=4, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', dir_save_path = 'data/training_data/'):
 
     # read data in csv 
     trace_df = pd.read_csv(dir_load_path)
@@ -400,12 +400,12 @@ def main(prefix_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPerm
     df, declerations = extract_prefixtraces_and_decleration(test_df,t_length)
     # encode test data and save to base dir 
     df_type = 'test'
-    print(f"preparing testing data for trace length {t_length}")
+    print(f"preparing test data for trace length {t_length}")
     boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
     LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
-    
+
     print("Done!")
 
 
