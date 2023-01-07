@@ -1,7 +1,7 @@
 # import libraties
 import pandas as pd
 import numpy as np
-import json
+import sys
 import pickle
 # https://pm4py.fit.fraunhofer.de/documentation
 import pm4py
@@ -64,41 +64,57 @@ def train_test_split(trace):
     completion_time_ls = list(trace.groupby(['case'])['completeTime'].max())
     completion_time_ls = sorted(completion_time_ls)
 
-    # split on 70% max time 
-    split_portion = 0.70
+
+    # split on 70%  and 85% of max time 
+    train_split_portion = 0.70
+    val_split_seperation = 0.85
     total_data = len(completion_time_ls)
-    train_len = int(split_portion*total_data)
+    train_len = int(train_split_portion*total_data)
+    val_len = int(val_split_seperation*total_data)
     last_train_completion_time = completion_time_ls[train_len]
-    print(f"train test split time is - {last_train_completion_time}")
+    last_val_completion_time = completion_time_ls[val_len]
+    val_start_time = last_train_completion_time
+    print(f"train test and validation split times are - {last_train_completion_time} , {last_val_completion_time} ")
 
     # take all traces where start dates are after the last_train_completion_time
     dtype_list = list(trace.dtypes) # get original types of the columns
     train_df = pd.DataFrame(columns = trace.columns)
     test_df = pd.DataFrame(columns = trace.columns)
-    train_count,test_count = 0,0
+    val_df = pd.DataFrame(columns = trace.columns)
+    train_count,test_count,val_count = 0,0,0
     intersecting_traces = []
     for name, group in trace.groupby(['case'],as_index=False):
         if group['completeTime'].iloc[-1] <= last_train_completion_time:
             train_df = train_df.append(group)
             train_count+=1
-        elif group['startTime'].iloc[0] >= last_train_completion_time:
+        elif (group['startTime'].iloc[0] >= last_train_completion_time) and (group['completeTime'].iloc[-1] <= last_val_completion_time):
+            val_df = val_df.append(group)
+            val_count+=1        
+        elif group['startTime'].iloc[0] >= last_val_completion_time:
             test_df = test_df.append(group)
             test_count+=1
         else:
             intersecting_traces.append(group)
 
+
     # converting train and test to their original data types
     for i,col in enumerate(train_df.columns):
         train_df[col] = train_df[col].astype(dtype_list[i])
+
     for i,col in enumerate(test_df.columns):
         test_df[col] = test_df[col].astype(dtype_list[i])
-    print("train and test count")
-    print(train_count,test_count)
+
+    for i,col in enumerate(val_df.columns):
+        val_df[col] = val_df[col].astype(dtype_list[i])
+
+
+    print("train, val and test count")
+    print(train_count,val_count,test_count)
 
     # loss of traces due to temporal intersection
     # these are the traces which started and intersecting with split time - Timestamp('2018-10-15 17:31:12+0000', tz='UTC')
     print(f"loss of traces due to temporal intersection - {len(intersecting_traces)}")
-    return train_df, test_df
+    return train_df, test_df, val_df
 
 
 
@@ -352,7 +368,7 @@ def LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,n
 
 
 ########==============================================   main ==============================================########
-def main(prefix_length=4, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', dir_save_path = 'data/training_data/'):
+def main(prefix_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', dir_save_path = 'data/training_data/'):
 
     # read data in csv 
     trace_df = pd.read_csv(dir_load_path)
@@ -362,7 +378,7 @@ def main(prefix_length=4, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermi
     trace_base_df = trace_processed.copy()
 
     # split data in train and test sets
-    train_df, test_df = train_test_split(trace_processed)
+    train_df, test_df, val_df = train_test_split(trace_processed)
 
     # define comman variables 
     # ==============================================
@@ -389,7 +405,7 @@ def main(prefix_length=4, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermi
     ohe_dict = get_ohe_dict(categorical_vars, trace_base_df)
     # encode training data and save to base dir 
     df_type = 'train'
-    print(f"preparing training data for trace length {t_length}")
+    print(f"preparing training data for prefix length {t_length}")
     boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
@@ -400,16 +416,44 @@ def main(prefix_length=4, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermi
     df, declerations = extract_prefixtraces_and_decleration(test_df,t_length)
     # encode test data and save to base dir 
     df_type = 'test'
-    print(f"preparing test data for trace length {t_length}")
+    print(f"preparing test data for prefix length {t_length}")
     boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
     LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
 
+
+    # val data preparation 
+    df, declerations = extract_prefixtraces_and_decleration(val_df,t_length)
+    # encode val data and save to base dir 
+    df_type = 'val'
+    print(f"preparing val data for prefix length {t_length}")
+    boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
+    frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
+    complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+    LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+
+    # process completed
     print("Done!")
 
 
 if __name__=='__main__':
-    main()
+
+    # extract passed paramter along, default trace length is 10
+    try:
+        prefix_length = int(sys.argv[1])
+        print(f"Encoding data for prefix length {prefix_length}")
+    except:
+        print("Please enter integer value, using default prefix value 10 and encoding")
+        prefix_length = 10
+
+    # location of travel permit raw file 
+    dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv'
+
+    # location of encoding saving path
+    dir_save_path = 'data/training_data/'
+
+    # calling main function with passed implementation method
+    main(prefix_length, dir_load_path, dir_save_path)
 
 
