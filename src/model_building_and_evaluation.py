@@ -42,33 +42,40 @@ def build_evaluation_dataframe():
     ## Setting up Model Evaluation DataFrame
     # All the results will be saved to the `results_df` dataframe for comparison.
 
-    results = pd.DataFrame(index=['Decision Tree (Default)'],
-                              columns=['F-score', 'Precision','Recall', 'Accuracy'])
+    results = pd.DataFrame(columns=['Encoding', 'Model', 'F-score', 'Precision', 'Recall', 'Accuracy'], index=[0])
     return results
 
 
 
-def train_test_decision_tree(X_train, y_train, X_test, y_test, results):
+def train_test_decision_tree(X_train, y_train, X_test, y_test, results, encoding):
 
     dt = DecisionTreeClassifier(random_state=42)  # Create Decision Tree classifier object
     dt_fit = dt.fit(X_train, y_train)  # Train Decision Tree Classifier
     dt_predict = dt_fit.predict(X_test)  #Predict the response for test dataset
 
-    results.loc['Decision Tree (Default)', :] = [f1_score(y_test, dt_predict, average='macro'), precision_score(y_test, dt_predict), recall_score(
-        y_test, dt_predict), accuracy_score(y_test, dt_predict)]
-    results.sort_values(by='F-score', ascending=False)
+    new_results = pd.Series({'Encoding': encoding, 'Model': 'Decision Tree (Default)', 'F-score': f1_score(y_test, dt_predict, average='macro'), 'Precision': precision_score(y_test, dt_predict), 'Recall': recall_score(
+        y_test, dt_predict), 'Accuracy': accuracy_score(y_test, dt_predict)})
+    results = pd.concat([results, new_results.to_frame().T], ignore_index=True)
+
+    # results.loc['Decision Tree (Default)', :] = [f1_score(y_test, dt_predict, average='macro'), precision_score(y_test, dt_predict), recall_score(
+    #     y_test, dt_predict), accuracy_score(y_test, dt_predict)]
+    # results.sort_values(by='F-score', ascending=False)
 
     tree.plot_tree(dt_fit)
 
-def train_test_logistic_regression(X_train, y_train, X_test, y_test, results):
+def train_test_logistic_regression(X_train, y_train, X_test, y_test, results, encoding):
     lr = LogisticRegression(random_state=42)
     lr_fit = lr.fit(X_train, y_train)
     lr_predict = lr_fit.predict(X_test)
 
-    results.loc['Logistic Regression (Default)', :] = [f1_score(y_test, lr_predict, average='macro'),
-                                                          precision_score(y_test, lr_predict),
-                                                          recall_score(y_test, lr_predict),
-                                                          accuracy_score(y_test, lr_predict)]
+    new_results = pd.Series({'Encoding': encoding, 'Model': 'Logistic Regression (Default)', 'F-score': f1_score(y_test, lr_predict, average='macro'), 'Precision': precision_score(y_test, lr_predict), 'Recall': recall_score(
+        y_test, lr_predict), 'Accuracy': accuracy_score(y_test, lr_predict)})
+    results = pd.concat([results, new_results.to_frame().T], ignore_index=True)
+
+    # results.loc['Logistic Regression (Default)', :] = [f1_score(y_test, lr_predict, average='macro'),
+    #                                                       precision_score(y_test, lr_predict),
+    #                                                       recall_score(y_test, lr_predict),
+    #                                                       accuracy_score(y_test, lr_predict)]
     results.sort_values(by='F-score', ascending=False)
 
 
@@ -95,28 +102,35 @@ def train_test_logstic_regression_grid_search(X_train, y_train, X_test, y_test, 
 
     results.sort_values(by='F-score', ascending=False)
 
-
+results_df = build_evaluation_dataframe()
 training_data = '../data/training_data'
 for filename in tqdm(os.listdir(training_data)):  # iterate over all files in directory DIR
     if not filename.startswith('.'):  # do not process hidden files
-        file_metadata = re.split('[_.]', filename)  # splits the filename on '-' and '.' -> creates a list
+        file_metadata = re.split('[_]', filename)  # splits the filename on '-' and '.' -> creates a list
+        if file_metadata[2] == 'test':
+            filename_test = filename
+            filename_train = file_metadata
+            filename_train[2] = 'train'
+            filename_train = '_'.join(filename_train)
+            filename_val = file_metadata
+            filename_val[2] = 'val'
+            filename_val = '_'.join(filename_val)
+            encoding = file_metadata[0]
+            data_test = load_data(os.path.join(training_data, filename_test))
+            data_train = load_data(os.path.join(training_data, filename_train))
+            data_val = load_data(os.path.join(training_data, filename_val))
+            X_train_data = np.array(data_train['X'])
+            X_test_data = np.array(data_test['X'])
+            y_train_data = np.array(data_train['y'])
+            y_test_data = np.array(data_test['y'])
+            train_test_decision_tree(X_train=X_train_data, y_train=y_train_data, X_test=X_test_data, y_test=y_test_data,
+                                     results=results_df, encoding=encoding)
+            train_test_logistic_regression(X_train=X_train_data, y_train=y_train_data, X_test=X_test_data,
+                                           y_test=y_test_data, results=results_df, encoding=encoding)
+            print(results_df)
+            print('hello')
 
-        encoding_type = file_metadata[0]  # will be passed as parameter to convert_to_parquet
-    #TODO: complete for loop to iterate through files. Need to assign test and train into the different datasets
 
-data_test = load_data("../data/training_data/boolean_encode_test_trace_len_6.pickle")
-data_train = load_data("../data/training_data/boolean_encode_train_trace_len_6.pickle")
-
-X_train_data = np.array(data_train['X'])
-X_test_data = np.array(data_test['X'])
-y_train_data = np.array(data_train['y'])
-y_test_data = np.array(data_test['y'])
-
-results_df = build_evaluation_dataframe()
-train_test_decision_tree(X_train=X_train_data, y_train=y_train_data, X_test=X_test_data, y_test=y_test_data,
-                             results=results_df)
-train_test_logistic_regression(X_train=X_train_data, y_train=y_train_data, X_test=X_test_data, y_test=y_test_data,
-                             results=results_df)
 
 # train_test_logstic_regression_grid_search(X_train=X_train_data, y_train=y_train_data, X_test=X_test_data, y_test=y_test_data,
 #                              results=results_df)
