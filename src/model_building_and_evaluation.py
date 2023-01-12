@@ -47,7 +47,7 @@ def train_test_decision_tree(X_train, y_train, X_test, y_test):
     dt_fit = dt.fit(X_train, y_train)  # Train Decision Tree Classifier
     dt_predict = dt_fit.predict(X_test)  #Predict the response for test dataset
 
-    return pd.Series({'Model': 'Decision Tree (Default)', 'F-score': f1_score(y_test, dt_predict, average='macro'), 'Precision': precision_score(y_test, dt_predict), 'Recall': recall_score(
+    return dt_fit, pd.Series({'Model': 'Decision Tree (Default)', 'F-score': f1_score(y_test, dt_predict, average='macro'), 'Precision': precision_score(y_test, dt_predict), 'Recall': recall_score(
         y_test, dt_predict), 'Accuracy': accuracy_score(y_test, dt_predict)})
 
 
@@ -56,7 +56,7 @@ def train_test_logistic_regression(X_train, y_train, X_test, y_test):
     lr_fit = lr.fit(X_train, y_train)
     lr_predict = lr_fit.predict(X_test)
 
-    return pd.Series({'Model': 'Logistic Regression (Default)', 'F-score': f1_score(y_test, lr_predict, average='macro'), 'Precision': precision_score(y_test, lr_predict), 'Recall': recall_score(
+    return lr_fit, pd.Series({'Model': 'Logistic Regression (Default)', 'F-score': f1_score(y_test, lr_predict, average='macro'), 'Precision': precision_score(y_test, lr_predict), 'Recall': recall_score(
         y_test, lr_predict), 'Accuracy': accuracy_score(y_test, lr_predict)})
 
 
@@ -98,7 +98,7 @@ def train_test_random_forest(X_train, y_train, X_test, y_test):
     # Predicting the Test set results
     rf_predict = rf_fit.predict(X_test)
 
-    return pd.Series({'Model': 'Random Forest (Default)', 'F-score': f1_score(y_test, rf_predict, average='macro'), 'Precision': precision_score(y_test, rf_predict), 'Recall': recall_score(
+    return rf_fit, pd.Series({'Model': 'Random Forest (Default)', 'F-score': f1_score(y_test, rf_predict, average='macro'), 'Precision': precision_score(y_test, rf_predict), 'Recall': recall_score(
         y_test, rf_predict), 'Accuracy': accuracy_score(y_test, rf_predict)})
 
 
@@ -112,7 +112,7 @@ def train_test_neural_network(X_train, y_train, X_test, y_test):
     # Predicting the Test set results
     nnet_predict = nnet_fit.predict(X_test)
 
-    return pd.Series({'Model': 'Neural Net', 'F-score': f1_score(y_test, nnet_predict, average='macro'),
+    return nnet_fit, pd.Series({'Model': 'Neural Net', 'F-score': f1_score(y_test, nnet_predict, average='macro'),
                     'Precision': precision_score(y_test, nnet_predict), 'Recall': recall_score(
                     y_test, nnet_predict), 'Accuracy': accuracy_score(y_test, nnet_predict)})
 
@@ -138,21 +138,29 @@ def iterate_data_and_create_x_y(dataset_directory, dataset_file, dataset_filenam
 
 def train_and_test_models(dataset_filename_split, X_train_data, X_test_data, y_train_data, y_test_data):
     encoding_results = pd.DataFrame(columns=['Encoding', 'Trace Length'])
-
-    model_results = train_test_decision_tree(X_train_data, y_train_data, X_test_data, y_test_data)
-    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-
-    model_results = train_test_logistic_regression(X_train_data, y_train_data, X_test_data, y_test_data)
-    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-
-    model_results = train_test_random_forest(X_train_data, y_train_data, X_test_data, y_test_data)
-    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-
-    model_results = train_test_neural_network(X_train_data, y_train_data, X_test_data, y_test_data)
-    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-
     encoding = dataset_filename_split[0]
     trace_length = dataset_filename_split[5][:-7]  # slice to remove ".pickle" from this metadata
+
+    model, model_results = train_test_decision_tree(X_train_data, y_train_data, X_test_data, y_test_data)
+    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
+    pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
+
+    model, model_results = train_test_logistic_regression(X_train_data, y_train_data, X_test_data, y_test_data)
+    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
+    pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
+
+    model, model_results = train_test_random_forest(X_train_data, y_train_data, X_test_data, y_test_data)
+    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
+    pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
+
+    model, model_results = train_test_neural_network(X_train_data, y_train_data, X_test_data, y_test_data)
+    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
+    pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
+
     encoding_results['Encoding'] = encoding
     encoding_results['Trace Length'] = trace_length
 
@@ -169,10 +177,9 @@ def run_model_training_and_evaluation():
                 X_train_data, X_test_data, y_train_data, y_test_data = iterate_data_and_create_x_y(training_data_dir, filename, filename_split)
                 new_results = train_and_test_models(filename_split, X_train_data, X_test_data, y_train_data, y_test_data)
                 evaluation_results = pd.concat([evaluation_results, new_results], ignore_index=True)
-
     evaluation_results = evaluation_results.sort_values(by='F-score', ascending=False)
 
-    evaluation_results.to_csv('../data/processed/model_evaluation_results', index=False)
+    evaluation_results.to_csv('../data/processed/model_evaluation_results.csv', index=False)
     print(tabulate(evaluation_results, headers="keys", tablefmt="github", showindex=False))
 
 run_model_training_and_evaluation()
