@@ -182,4 +182,16 @@ def run_model_training_and_evaluation():
     evaluation_results.to_csv('../data/processed/model_evaluation_results.csv', index=False)
     print(tabulate(evaluation_results, headers="keys", tablefmt="github", showindex=False))
 
+# TODO: Build function to validate boolean encoding w/ trace length 6 model
+#   1) load saved model
+#   2) fit model to validation data
+#   3) return results
+def run_selected_model_validation():
+    validation_results = build_evaluation_dataframe()
+    training_data_dir = '../data/training_data'
+    for filename in os.listdir(training_data_dir):  # iterate over all files in directory DIR
+        if filename == 'boolean_encode_val_trace_len_6.pickle':
+            # TODO: run prediction on validation data, output results.
+
+
 run_model_training_and_evaluation()
