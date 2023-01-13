@@ -11,6 +11,7 @@ from pm4py.algo.transformation.log_to_features import algorithm as log_to_featur
 from pm4py.objects.log.obj import EventLog, Trace
 import warnings
 warnings.filterwarnings("ignore")
+np.random.seed(42)
 
 
 # function to project the trace
@@ -42,15 +43,20 @@ def data_preprocessing(trace):
 
     # add other time features
     trace_log = interval_lifecycle.assign_lead_cycle_time(trace_log)
-
-    # extract traces only till the decleration is rejected (included), otherwise complete trace 
+ 
+    # extract traces only till the decleration is rejected(included), otherwise include it payment handled 
     prefix_traces = []
     for trace in trace_log:
+        trace_end_flag = False
         for i,event in enumerate(trace):
             if "Declaration REJECTED" in event['event']:
+                trace_end_flag = True
                 i+=1
                 break
-        prefix_traces.append(Trace(trace[:i], attributes = trace.attributes))
+            if "Payment Handled" in event['event']:
+                trace_end_flag = True
+        if trace_end_flag:
+            prefix_traces.append(Trace(trace[:i], attributes = trace.attributes))
     prefix_traces = EventLog(prefix_traces)
 
     # convert extracted traces to dataframe
@@ -58,7 +64,7 @@ def data_preprocessing(trace):
     trace.head()
     return trace
 
-
+# function for train test validation split
 def train_test_split(trace):
     # get completion time and sort
     completion_time_ls = list(trace.groupby(['case'])['completeTime'].max())
@@ -118,7 +124,7 @@ def train_test_split(trace):
 
 
 
-
+# function for extracting prefix traces and our target variable decleration
 def extract_prefixtraces_and_decleration(permits,t_length):
     # converting dataframe to event log
     trace_log = pm4py.format_dataframe(permits, case_id='case', activity_key='event', timestamp_key='completeTime', start_timestamp_key='startTime')
