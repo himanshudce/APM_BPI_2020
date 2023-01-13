@@ -318,7 +318,7 @@ def complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_
             print(i, len(d))
 
     # save results
-    encode_name = 'complex_index_encode_'
+    encode_name = 'complexindex_encode_'
     save_path = save_path_base + encode_name + df_type +'_trace_len_'+str(t_length)+ '.pickle'
     save_data(data, declerations, ohe_dict ,save_path)
 

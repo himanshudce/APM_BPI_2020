@@ -41,24 +41,38 @@ def build_evaluation_dataframe():
     return results
 
 
-def train_test_decision_tree(X_train, y_train, X_test, y_test):
+def train_test_decision_tree(X_train, y_train, X_test, y_test, X_val, y_val):
 
     dt = DecisionTreeClassifier(random_state=42)  # Create Decision Tree classifier object
     dt_fit = dt.fit(X_train, y_train)  # Train Decision Tree Classifier
-    dt_predict = dt_fit.predict(X_test)  #Predict the response for test dataset
 
-    return dt_fit, pd.Series({'Model': 'Decision Tree (Default)', 'F-score': f1_score(y_test, dt_predict, average='macro'), 'Precision': precision_score(y_test, dt_predict), 'Recall': recall_score(
-        y_test, dt_predict), 'Accuracy': accuracy_score(y_test, dt_predict)})
+    dt_predict = dt_fit.predict(X_test)  # Predict the response for test dataset
+    test_results = pd.Series({'Model': 'Decision Tree (Test)', 'F-score': f1_score(y_test, dt_predict, average='macro'),
+               'Precision': precision_score(y_test, dt_predict), 'Recall': recall_score(
+            y_test, dt_predict), 'Accuracy': accuracy_score(y_test, dt_predict)})
+
+    dt_val = dt_fit.predict(X_val)  # validation
+    test_val = pd.Series({'Model': 'Decision Tree (Val)', 'F-score': f1_score(y_val, dt_val, average='macro'),
+         'Precision': precision_score(y_val, dt_val), 'Recall': recall_score(
+            y_val, dt_val), 'Accuracy': accuracy_score(y_val, dt_val)})
+
+    return dt_fit, test_results, test_val
 
 
-def train_test_logistic_regression(X_train, y_train, X_test, y_test):
+def train_test_logistic_regression(X_train, y_train, X_test, y_test, X_val, y_val):
     lr = LogisticRegression(random_state=42)
     lr_fit = lr.fit(X_train, y_train)
+    
     lr_predict = lr_fit.predict(X_test)
-
-    return lr_fit, pd.Series({'Model': 'Logistic Regression (Default)', 'F-score': f1_score(y_test, lr_predict, average='macro'), 'Precision': precision_score(y_test, lr_predict), 'Recall': recall_score(
+    test_results = pd.Series({'Model': 'Logistic Regression (Default)', 'F-score': f1_score(y_test, lr_predict, average='macro'), 'Precision': precision_score(y_test, lr_predict), 'Recall': recall_score(
         y_test, lr_predict), 'Accuracy': accuracy_score(y_test, lr_predict)})
 
+    lr_val = lr_fit.predict(X_val)  # validation
+    test_val = pd.Series({'Model': 'Logistic Regression (Val)', 'F-score': f1_score(y_val, lr_val, average='macro'),
+         'Precision': precision_score(y_val, lr_val), 'Recall': recall_score(
+            y_val, lr_val), 'Accuracy': accuracy_score(y_val, lr_val)})
+
+    return lr_fit, test_results, test_val
 
 
 def train_test_logstic_regression_grid_search(X_train, y_train, X_test, y_test):
@@ -84,25 +98,25 @@ def train_test_logstic_regression_grid_search(X_train, y_train, X_test, y_test):
 
     return pd.Series({'Model': 'Logistic Regression (Hyper Parameter Tuning)', 'F-score': cross_val_results['test_f1_macro'].mean(), 'Precision': cross_val_results['test_precision_macro'].mean(), 'Recall': cross_val_results['test_recall_macro'].mean(), 'Accuracy': cross_val_results['test_accuracy'].mean()})
 
-    # results.loc['Logistic Regression (Hyper Parameter Tuning)', :] = cross_val_results[['test_f1_macro',
-    #                                                                                        'test_precision_macro',
-    #                                                                                        'test_recall_macro',
-    #                                                                                        'test_accuracy']].mean().values
-    #
-    # results.sort_values(by='F-score', ascending=False)
 
-
-def train_test_random_forest(X_train, y_train, X_test, y_test):
+def train_test_random_forest(X_train, y_train, X_test, y_test, X_val, y_val):
     rf = RandomForestClassifier(n_estimators=20, random_state=42, max_depth=4)
     rf_fit = rf.fit(X_train, y_train)
     # Predicting the Test set results
+    
     rf_predict = rf_fit.predict(X_test)
-
-    return rf_fit, pd.Series({'Model': 'Random Forest (Default)', 'F-score': f1_score(y_test, rf_predict, average='macro'), 'Precision': precision_score(y_test, rf_predict), 'Recall': recall_score(
+    test_results = pd.Series({'Model': 'Random Forest (Default)', 'F-score': f1_score(y_test, rf_predict, average='macro'), 'Precision': precision_score(y_test, rf_predict), 'Recall': recall_score(
         y_test, rf_predict), 'Accuracy': accuracy_score(y_test, rf_predict)})
 
+    rf_val = rf_fit.predict(X_val)  # validation
+    test_val = pd.Series({'Model': 'Logistic Regression (Val)', 'F-score': f1_score(y_val, rf_val, average='macro'),
+         'Precision': precision_score(y_val, rf_val), 'Recall': recall_score(
+            y_val, rf_val), 'Accuracy': accuracy_score(y_val, rf_val)})
 
-def train_test_neural_network(X_train, y_train, X_test, y_test):
+    return rf_fit, test_results, test_val
+
+
+def train_test_neural_network(X_train, y_train, X_test, y_test, X_val, y_val):
     nnet = MLPClassifier(hidden_layer_sizes=[100,],
                          alpha=0.0001,
                          activation='relu',
@@ -110,11 +124,18 @@ def train_test_neural_network(X_train, y_train, X_test, y_test):
                          solver='adam', random_state=42)
     nnet_fit = nnet.fit(X_train, y_train)
     # Predicting the Test set results
-    nnet_predict = nnet_fit.predict(X_test)
 
-    return nnet_fit, pd.Series({'Model': 'Neural Net', 'F-score': f1_score(y_test, nnet_predict, average='macro'),
+    nnet_predict = nnet_fit.predict(X_test)
+    test_results =  pd.Series({'Model': 'Neural Net', 'F-score': f1_score(y_test, nnet_predict, average='macro'),
                     'Precision': precision_score(y_test, nnet_predict), 'Recall': recall_score(
                     y_test, nnet_predict), 'Accuracy': accuracy_score(y_test, nnet_predict)})
+
+    nnet_val = nnet_fit.predict(X_val)  # validation
+    test_val = pd.Series({'Model': 'Neural Net (Val)', 'F-score': f1_score(y_val, nnet_val, average='macro'),
+         'Precision': precision_score(y_val, nnet_val), 'Recall': recall_score(
+            y_val, nnet_val), 'Accuracy': accuracy_score(y_val, nnet_val)})
+
+    return nnet_fit, test_results, test_val
 
 
 def iterate_data_and_create_x_y(dataset_directory, dataset_file, dataset_filename_split):
@@ -130,35 +151,41 @@ def iterate_data_and_create_x_y(dataset_directory, dataset_file, dataset_filenam
     data_val = load_data(os.path.join(dataset_directory, filename_val))
     X_train_data = np.array(data_train['X'])
     X_test_data = np.array(data_test['X'])
+    X_val_data = np.array(data_val['X'])
     y_train_data = np.array(data_train['y'])
     y_test_data = np.array(data_test['y'])
+    y_val_data = np.array(data_val['y'])
 
-    return X_train_data, X_test_data, y_train_data, y_test_data
+    return X_train_data, X_test_data, X_val_data, y_train_data, y_test_data, y_val_data
 
 
-def train_and_test_models(dataset_filename_split, X_train_data, X_test_data, y_train_data, y_test_data):
+def train_and_test_models(dataset_filename_split, X_train_data, X_test_data, X_val_data, y_train_data, y_test_data, y_val_data):
     encoding_results = pd.DataFrame(columns=['Encoding', 'Trace Length'])
     encoding = dataset_filename_split[0]
     trace_length = dataset_filename_split[5][:-7]  # slice to remove ".pickle" from this metadata
 
-    model, model_results = train_test_decision_tree(X_train_data, y_train_data, X_test_data, y_test_data)
+    model, model_results, val_results = train_test_decision_tree(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
     encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
     filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
     pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
 
-    model, model_results = train_test_logistic_regression(X_train_data, y_train_data, X_test_data, y_test_data)
+    model, model_results, val_results = train_test_logistic_regression(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
     encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-    filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
+    encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
+    filename = encoding + '_' + trace_length + '_logistic_regression_model.sav'
     pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
 
-    model, model_results = train_test_random_forest(X_train_data, y_train_data, X_test_data, y_test_data)
+    model, model_results, val_results = train_test_random_forest(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
     encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-    filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
+    encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
+    filename = encoding + '_' + trace_length + '_random_forest_model.sav'
     pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
 
-    model, model_results = train_test_neural_network(X_train_data, y_train_data, X_test_data, y_test_data)
+    model, model_results, val_results = train_test_neural_network(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
     encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-    filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
+    encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
+    filename = encoding + '_' + trace_length + '_neural_network_model.sav'
     pickle.dump(model, open(os.path.join('../models', filename), 'wb'))  # save the model to disk
 
     encoding_results['Encoding'] = encoding
@@ -174,12 +201,45 @@ def run_model_training_and_evaluation():
         if not filename.startswith('.'):  # do not process hidden files
             if 'test' in filename:
                 filename_split = re.split('[_]', filename)  # splits the filename on '-' and '.' -> creates a list
-                X_train_data, X_test_data, y_train_data, y_test_data = iterate_data_and_create_x_y(training_data_dir, filename, filename_split)
-                new_results = train_and_test_models(filename_split, X_train_data, X_test_data, y_train_data, y_test_data)
+                X_train_data, X_test_data, X_val_data, y_train_data, y_test_data, y_val_data = iterate_data_and_create_x_y(training_data_dir, filename, filename_split)
+                new_results = train_and_test_models(filename_split, X_train_data, X_test_data, X_val_data, y_train_data, y_test_data, y_val_data)
                 evaluation_results = pd.concat([evaluation_results, new_results], ignore_index=True)
     evaluation_results = evaluation_results.sort_values(by='F-score', ascending=False)
 
     evaluation_results.to_csv('../data/processed/model_evaluation_results.csv', index=False)
     print(tabulate(evaluation_results, headers="keys", tablefmt="github", showindex=False))
 
+
+def load_model(model_filename):
+    model_filename = os.path.join('../models', model_filename)
+    return pickle.load(open(model_filename, 'rb'))
+
+# TODO: Build function to validate boolean encoding w/ trace length 6 model
+#   1) load saved model
+#   2) fit model to validation data
+#   3) return results
+
+def run_selected_model_validation(model_file):
+    validation_model = load_model(model_file)
+    validation_results = build_evaluation_dataframe()
+    training_data_dir = '../data/training_data'
+    model_filename_split = re.split('[_]', model_file)
+    for filename in os.listdir(training_data_dir):  # iterate over all files in directory DIR
+        if model_filename_split[0] in filename and model_filename_split[1] in filename and 'val' in filename:
+            data_val = load_data(os.path.join(training_data_dir, filename))
+            X_val = np.array(data_val['X'])
+            y_val = np.array(data_val['y'])
+            model_name = model_filename_split[2] + ' ' + model_filename_split[3] + ' with ' + model_filename_split[0] + ' encoding and trace length ' + model_filename_split[1]
+            val_predict = validation_model.predict(X_val)
+            model_results = pd.Series({'Model': model_name, 'F-score': f1_score(y_val, val_predict, average='macro'),
+                       'Precision': precision_score(y_val, val_predict), 'Recall': recall_score(
+                    y_val, val_predict), 'Accuracy': accuracy_score(y_val, val_predict)})
+            validation_results = pd.concat([validation_results, model_results.to_frame().T], ignore_index=True)
+
+    validation_results.to_csv('../data/processed/validation_results.csv', index=False)
+    print(tabulate(validation_results, headers="keys", tablefmt="github", showindex=False))
+
+
 run_model_training_and_evaluation()
+
+# run_selected_model_validation('boolean_6_decision_tree_model.sav')
