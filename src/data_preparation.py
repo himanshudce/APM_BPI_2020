@@ -1,6 +1,7 @@
 # import libraties
 import pandas as pd
 import numpy as np
+import os
 import sys
 import pickle
 # https://pm4py.fit.fraunhofer.de/documentation
@@ -93,14 +94,12 @@ def train_test_split(trace):
         if group['completeTime'].iloc[-1] <= last_train_completion_time:
             train_df = train_df.append(group)
             train_count+=1
-        elif (group['startTime'].iloc[0] >= last_train_completion_time) and (group['completeTime'].iloc[-1] <= last_val_completion_time):
+        elif group['completeTime'].iloc[-1] <= last_val_completion_time:
             val_df = val_df.append(group)
             val_count+=1        
-        elif group['startTime'].iloc[0] >= last_val_completion_time:
+        else:
             test_df = test_df.append(group)
             test_count+=1
-        else:
-            intersecting_traces.append(group)
 
 
     # converting train and test to their original data types
@@ -113,13 +112,9 @@ def train_test_split(trace):
     for i,col in enumerate(val_df.columns):
         val_df[col] = val_df[col].astype(dtype_list[i])
 
-
     print("train, val and test count")
     print(train_count,val_count,test_count)
 
-    # loss of traces due to temporal intersection
-    # these are the traces which started and intersecting with split time - Timestamp('2018-10-15 17:31:12+0000', tz='UTC')
-    print(f"loss of traces due to temporal intersection - {len(intersecting_traces)}")
     return train_df, test_df, val_df
 
 
@@ -160,6 +155,17 @@ def extract_prefixtraces_and_decleration(permits,t_length):
     # convert logs to dataframe
     # final base dataframe
     df = pm4py.convert_to_dataframe(trace_prefixes)
+
+    # Create dataframe for Target variable and combine with above trace dataframe
+    cases = list(df.groupby(['case'],sort=False)['id'].first().keys())
+    df_dict = dict()
+    df_dict['case'] = cases
+    df_dict['declerations'] = declerations
+    temp_df = pd.DataFrame(df_dict)
+
+    # merge target variable with permits
+    df = df.merge(temp_df,on=['case'])
+
     return df, declerations
 
 
@@ -318,7 +324,7 @@ def complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_
             print(i, len(d))
 
     # save results
-    encode_name = 'complexindex_encode_'
+    encode_name = 'complex_index_'
     save_path = save_path_base + encode_name + df_type +'_trace_len_'+str(t_length)+ '.pickle'
     save_data(data, declerations, ohe_dict ,save_path)
 
@@ -371,11 +377,29 @@ def LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,n
     save_data(padded_data, declerations, ohe_dict ,save_path)
 
 
+# function to perform all the endodings
+def perform_all_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length):
+    boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
+    frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
+    complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+    # LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+
+
+
 
 
 ########==============================================   main ==============================================########
-def main(prefix_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', dir_save_path = 'data/training_data/'):
+def main(t_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', save_path_base = 'data/training_data/'):
 
+    # save paths
+    encoding_save_path = os.path.join(save_path_base,'encodings/')
+    original_data_save_path = os.path.join(save_path_base,'original_data/')
+    if not os.path.exists(encoding_save_path):
+        os.makedirs(encoding_save_path)
+    if not os.path.exists(original_data_save_path):
+        os.makedirs(original_data_save_path)
+    
+    
     # read data in csv 
     trace_df = pd.read_csv(dir_load_path)
 
@@ -386,11 +410,6 @@ def main(prefix_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPerm
     # split data in train and test sets
     train_df, test_df, val_df = train_test_split(trace_processed)
 
-    # define comman variables 
-    # ==============================================
-    # trace length and saving path
-    t_length = prefix_length
-    save_path_base = dir_save_path
     
     # passed features we want to extract
     # str_ev_attr	String attributes at the event level: these are hot-encoded into features that may assume value 0 or value 1.
@@ -411,36 +430,35 @@ def main(prefix_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPerm
     ohe_dict = get_ohe_dict(categorical_vars, trace_base_df)
     # encode training data and save to base dir 
     df_type = 'train'
+    save_path_df = original_data_save_path + df_type +'_trace_len_'+str(t_length)+ '.csv' # data save path
+    df.to_csv(save_path_df,index=False )# saving data
     print(f"preparing training data for prefix length {t_length}")
-    boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
-    frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
-    complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
-    LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+    perform_all_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,encoding_save_path,df_type,t_length)
 
 
     # test data preparation 
     df, declerations = extract_prefixtraces_and_decleration(test_df,t_length)
     # encode test data and save to base dir 
     df_type = 'test'
+    save_path_df = original_data_save_path + df_type +'_trace_len_'+str(t_length)+ '.csv' # data save path
+    df.to_csv(save_path_df,index=False )# saving data
     print(f"preparing test data for prefix length {t_length}")
-    boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
-    frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
-    complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
-    LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+    perform_all_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,encoding_save_path,df_type,t_length)
 
 
     # val data preparation 
     df, declerations = extract_prefixtraces_and_decleration(val_df,t_length)
     # encode val data and save to base dir 
     df_type = 'val'
+    save_path_df = original_data_save_path + df_type +'_trace_len_'+str(t_length)+ '.csv' # data save path
+    df.to_csv(save_path_df,index=False )# saving data
     print(f"preparing val data for prefix length {t_length}")
-    boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
-    frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
-    complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
-    LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+    perform_all_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,encoding_save_path,df_type,t_length)
 
     # process completed
     print("Done!")
+
+
 
 
 if __name__=='__main__':
