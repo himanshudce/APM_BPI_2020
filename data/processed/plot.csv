@@ -1,10 +1,13 @@
 Model,Encoding,Trace Length,F-score,Precision,Recall,Accuracy
-Decision Tree (Val),boolean,10,0.89,0.95,0.74,0.92
-Decision Tree (Val),boolean,8,0.85,0.91,0.68,0.89
-Decision Tree (Val),boolean,6,0.43,0.6,0.01,0.72
-Decision Tree (Val),complex,10,0.84,0.75,0.8,0.87
-Decision Tree (Val),complex,8,0.83,0.76,0.75,0.86
-Decision Tree (Val),complex,6,0.51,0.3,0.35,0.58
-Decision Tree (Val),frequency,10,0.89,0.94,0.75,0.92
-Decision Tree (Val),frequency,8,0.85,0.91,0.67,0.89
-Decision Tree (Val),frequency,6,0.43,0.75,0.01,0.72
+Decision Tree (Val),Boolean,10,0.89,0.96,0.74,0.91
+Decision Tree (Val),Boolean,8,0.85,0.92,0.67,0.89
+Decision Tree (Val),Boolean,6,0.43,0.67,0.02,0.71
+Decision Tree (Val),Complex,10,0.86,0.8,0.79,0.88
+Decision Tree (Val),Complex,8,0.82,0.77,0.72,0.86
+Decision Tree (Val),Complex,6,0.51,0.31,0.36,0.58
+Decision Tree (Val),Frequency,10,0.89,0.95,0.74,0.91
+Decision Tree (Val),Frequency,8,0.85,0.91,0.67,0.89
+Decision Tree (Val),Frequency,6,0.43,0.8,0.02,0.71
+Baseline,Baseline,6,0.48,0.26,0.23,0.59
+Baseline,Baseline,8,0.48,0.26,0.23,0.59
+Baseline,Baseline,10,0.48,0.26,0.23,0.59
