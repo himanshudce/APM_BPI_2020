@@ -379,17 +379,18 @@ def LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,n
 
 # function to perform all the endodings
 def perform_all_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length):
-    boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
-    frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     complex_index_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
+
+    # To run other encodings,remove comments
+    # boolean_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
+    # frequency_encoding(df, declerations,ohe_dict,str_ev_attr,save_path_base,df_type,t_length)
     # LSTM_encoding(df,declerations,ohe_dict,str_ev_attr,str_tr_attr,num_ev_attr,num_tr_attr,save_path_base,df_type,t_length)
 
 
 
 
-
 ########==============================================   main ==============================================########
-def main(t_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', save_path_base = 'data/training_data/'):
+def main(t_length=6, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv', save_path_base = 'data/training_data/'):
 
     # save paths
     encoding_save_path = os.path.join(save_path_base,'encodings/')
@@ -463,16 +464,16 @@ def main(t_length=10, dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.c
 
 if __name__=='__main__':
 
-    # extract passed paramter along, default trace length is 10
+    # extract passed paramter along, default trace length is 6
     try:
         prefix_length = int(sys.argv[1])
         print(f"Encoding data for prefix length {prefix_length}")
     except:
-        print("Please enter integer value, using default prefix value 10 and encoding")
-        prefix_length = 10
+        print(f"Using default prefix value 6 and encoding")
+        prefix_length = 6
 
     # location of travel permit raw file 
-    dir_load_path = 'data/BPIC2020_CSV/filterd_TravelPermits.csv'
+    dir_load_path = 'data/BPIC2020_CSV/TravelPermits.csv'
 
     # location of encoding saving path
     dir_save_path = 'data/training_data/'
