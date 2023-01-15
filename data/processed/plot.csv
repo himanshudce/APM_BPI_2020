@@ -11,3 +11,7 @@ Decision Tree (Val),Frequency,6,0.43,0.8,0.02,0.71
 Baseline,Baseline,6,0.48,0.26,0.23,0.59
 Baseline,Baseline,8,0.48,0.26,0.23,0.59
 Baseline,Baseline,10,0.48,0.26,0.23,0.59
+Decision Tree (Val),Boolean,4,0.41,0,0,0.71
+Decision Tree (Val),Complex,4,0.51,0.31,0.46,0.54
+Decision Tree (Val),Frequency,4,0.41,0,0,0.71
+Baseline,Baseline,4,0.48,0.26,0.23,0.59
