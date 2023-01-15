@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import pickle
 from tabulate import tabulate
+import random
 
 from sklearn.preprocessing import FunctionTransformer, MinMaxScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -57,7 +58,20 @@ def train_test_decision_tree(X_train, y_train, X_test, y_test, X_val, y_val):
          'Precision': precision_score(y_val, dt_val), 'Recall': recall_score(
             y_val, dt_val), 'Accuracy': accuracy_score(y_val, dt_val)})
 
-    return dt_fit, test_results, test_val, dt_predict, predictions_prob
+    df_baseline = []
+    random.seed(42)
+    for i in range(len(dt_val)):
+        if random.random() <=0.75:
+            df_baseline.append(0)
+        else:
+            df_baseline.append(1)
+
+    base_val = pd.Series({'Model': 'Baseline', 'F-score': f1_score(y_val, df_baseline, average='macro'),
+        'Precision': precision_score(y_val, df_baseline), 'Recall': recall_score(
+        y_val, df_baseline), 'Accuracy': accuracy_score(y_val, df_baseline)})
+
+
+    return dt_fit, test_results, test_val, base_val, dt_predict, predictions_prob
 
 
 def train_test_logistic_regression(X_train, y_train, X_test, y_test, X_val, y_val):
@@ -177,34 +191,36 @@ def train_and_test_models(dataset_filename_split, X_train_data, X_test_data, X_v
     encoding = dataset_filename_split[0]
     trace_length = dataset_filename_split[5][:-7]  # slice to remove ".pickle" from this metadata
 
-    model, model_results, val_results, predict_class, predictions_prob  = train_test_decision_tree(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
+    model, model_results, val_results, base_val, predict_class, predictions_prob  = train_test_decision_tree(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
     encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
     encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
+    encoding_results = pd.concat([encoding_results, base_val.to_frame().T], ignore_index=True)
+    
     filename = encoding + '_' + trace_length + '_decision_tree_model.sav'
     pickle.dump(model, open(os.path.join('models', filename), 'wb'))  # save the model to disk
     save_model_predictions(predictions_prob,predict_class,filename,base_path = 'data/processed')
 
+    # To run the other models, remove below comments
+    # model, model_results, val_results, predict_class, predictions_prob = train_test_logistic_regression(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
+    # encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    # encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
+    # filename = encoding + '_' + trace_length + '_logistic_regression_model.sav'
+    # pickle.dump(model, open(os.path.join('models', filename), 'wb'))  # save the model to disk
+    # save_model_predictions(predictions_prob,predict_class,filename,base_path = 'data/processed')
 
-    model, model_results, val_results, predict_class, predictions_prob = train_test_logistic_regression(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
-    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-    encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
-    filename = encoding + '_' + trace_length + '_logistic_regression_model.sav'
-    pickle.dump(model, open(os.path.join('models', filename), 'wb'))  # save the model to disk
-    save_model_predictions(predictions_prob,predict_class,filename,base_path = 'data/processed')
+    # model, model_results, val_results, predict_class, predictions_prob = train_test_random_forest(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
+    # encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    # encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
+    # filename = encoding + '_' + trace_length + '_random_forest_model.sav'
+    # pickle.dump(model, open(os.path.join('models', filename), 'wb'))  # save the model to disk
+    # save_model_predictions(predictions_prob,predict_class,filename,base_path = 'data/processed')
 
-    model, model_results, val_results, predict_class, predictions_prob = train_test_random_forest(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
-    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-    encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
-    filename = encoding + '_' + trace_length + '_random_forest_model.sav'
-    pickle.dump(model, open(os.path.join('models', filename), 'wb'))  # save the model to disk
-    save_model_predictions(predictions_prob,predict_class,filename,base_path = 'data/processed')
-
-    model, model_results, val_results, predict_class, predictions_prob = train_test_neural_network(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
-    encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
-    encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
-    filename = encoding + '_' + trace_length + '_neural_network_model.sav'
-    pickle.dump(model, open(os.path.join('models', filename), 'wb'))  # save the model to disk
-    save_model_predictions(predictions_prob,predict_class,filename,base_path = 'data/processed')
+    # model, model_results, val_results, predict_class, predictions_prob = train_test_neural_network(X_train_data, y_train_data, X_test_data, y_test_data, X_val_data, y_val_data)
+    # encoding_results = pd.concat([encoding_results, model_results.to_frame().T], ignore_index=True)
+    # encoding_results = pd.concat([encoding_results, val_results.to_frame().T], ignore_index=True)
+    # filename = encoding + '_' + trace_length + '_neural_network_model.sav'
+    # pickle.dump(model, open(os.path.join('models', filename), 'wb'))  # save the model to disk
+    # save_model_predictions(predictions_prob,predict_class,filename,base_path = 'data/processed')
 
 
     encoding_results['Encoding'] = encoding
@@ -227,6 +243,31 @@ def run_model_training_and_evaluation():
 
     evaluation_results.to_csv('data/processed/model_evaluation_results.csv', index=False)
     print(tabulate(evaluation_results, headers="keys", tablefmt="github", showindex=False))
+
+
+# function to save predictions of our best model 
+def save_best_model_predictions(prediction_load_path = 'data/processed/complex_6_decision_tree_model_predictions.csv', test_data_path = 'data/training_data/original_data/test_trace_len_6.csv' ):
+    # load data for the best perfroming model for trace length 6
+    predicted_df = pd.read_csv(prediction_load_path)
+    test_df = pd.read_csv(test_data_path)
+
+    # Create dataframe for Target variable and combine with above trace dataframe
+    cases = list(test_df.groupby(['case'],sort=False)['id'].first().keys())
+    predicted_df['case'] = cases
+
+    # merge target variable with permits
+    test_df = test_df.merge(predicted_df,on=['case'])
+    test_df.to_csv('results/complex_6_decision_tree_model_merge_predictions.csv',index=False)
+
+    # get wrong predictions
+    wrong_predictions = test_df[(test_df['predicted_class']!=test_df['declerations'])]
+    wrong_predictions = wrong_predictions.reset_index(drop=True)
+    wrong_predictions.to_csv('results/complex_6_decision_tree_model_merge_wrong_predictions.csv',index=False)
+
+    # get correct predictions
+    correct_predictions = test_df[(test_df['predicted_class']==test_df['declerations'])]
+    correct_predictions = correct_predictions.reset_index(drop=True)
+    correct_predictions.to_csv('results/complex_6_decision_tree_model_merge_correct_predictions.csv',index=False)
 
 
 def load_model(model_filename):
@@ -259,6 +300,7 @@ def run_selected_model_validation(model_file):
     print(tabulate(validation_results, headers="keys", tablefmt="github", showindex=False))
 
 
-run_model_training_and_evaluation()
-
-# run_selected_model_validation('boolean_6_decision_tree_model.sav')
+if __name__=='__main__':
+    run_model_training_and_evaluation()
+    save_best_model_predictions()
+    # run_selected_model_validation('boolean_6_decision_tree_model.sav')

@@ -1,0 +1,8 @@
+pandas
+sklearn
+numpy
+matplotlib
+plotly
+pm4py
+seaborn
+tabulate
