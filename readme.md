@@ -35,6 +35,8 @@ These steps will run the full data-preparation, model building, prediction gener
     pip install -r requirments.txt
     ```
    ***Note***: *The scripts have been developed and tested with `Python 3.9`*
+   
+    ***Note 2***: If using ARM32 or ARM64 machine and an error is encountered installing pm4py, follow pm4py install instructions [here](https://pm4py.fit.fraunhofer.de/install-page).
 
 2. Once all dependencies are installed, we can run the data preperation python file (default length 6 with complex encoding). The outputs are saved in `training_data/encodings` directory.
     ```bash
